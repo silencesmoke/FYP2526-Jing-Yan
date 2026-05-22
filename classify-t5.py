@@ -121,7 +121,7 @@ def classify_flan_t5(article_id, title, cleaned_abstract, index_keyword, author_
     return res
 
 
-df = pd.read_csv("dt_clean.csv", encoding="gbk")
+df = pd.read_csv("scopus_data.csv", encoding="gbk")
 
 results = []
 
