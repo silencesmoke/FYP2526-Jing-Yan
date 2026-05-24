@@ -193,7 +193,6 @@ def main():
         on_bad_lines="skip"
     )
 
-    df = df.head(10)
 
     runtime_info = get_runtime_info()
     print(json.dumps(runtime_info, indent=2, ensure_ascii=False))
