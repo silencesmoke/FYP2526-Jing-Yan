@@ -87,8 +87,6 @@ Output Format (JSON):
 
 Important:
 - Return JSON only.
-- Replace every "1-5" with an actual score from 1 to 5.
-- Scores may be strings or integers, but each value must be one of: 1, 2, 3, 4, 5.
 - Do not add markdown, explanations, or text outside the JSON.
 """
 
@@ -148,9 +146,6 @@ def get_field(item, possible_keys):
     return ""
 
 
-# =========================
-# 主程序
-# =========================
 if __name__ == "__main__":
 
     df = pd.read_csv(CSV_PATH)
