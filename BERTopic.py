@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from gensim.corpora import Dictionary
 from gensim.models import CoherenceModel
 
-# ===================== 停用词 =====================
 nltk.download('stopwords', quiet=True)
 stop_words = stopwords.words('english')
 
@@ -24,10 +23,8 @@ domain_stopwords = [
 ]
 stop_words.extend(domain_stopwords)
 
-# ===================== 读取数据 =====================
 df = pd.read_csv("dt_selected_6576_documents.csv", encoding="utf-8-sig")
 
-# ===================== 预处理（仅 Abstract） =====================
 def preprocess_text(text):
     text = str(text).lower()
     text = re.sub(r'[^a-zA-Z\s]', ' ', text)
@@ -38,7 +35,6 @@ def preprocess_text(text):
 if 'cleaned_abstract' not in df.columns:
     df['cleaned_abstract'] = df['Abstract'].apply(preprocess_text)
 
-# ===================== 模型 =====================
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 umap_model = UMAP(
@@ -67,11 +63,9 @@ topic_model = BERTopic(
     verbose=True
 )
 
-# ===================== 训练 =====================
 topics, probabilities = topic_model.fit_transform(df['cleaned_abstract'].tolist())
 df['assigned_topic'] = topics
 
-# ===================== 自定义主题名称 =====================
 topic_names = {}
 
 for topic_id in sorted(topic_model.get_topic_info().Topic):
@@ -82,7 +76,6 @@ for topic_id in sorted(topic_model.get_topic_info().Topic):
 
 topic_model.set_topic_labels(topic_names)
 
-# ===================== 输出基础统计 =====================
 print("\n=== TOPIC COUNT STATISTICS ===")
 topic_info = topic_model.get_topic_info()
 print(topic_info)
@@ -94,7 +87,6 @@ for topic_id in sorted(topic_info.Topic):
     words = [word for word, score in topic_model.get_topic(topic_id)[:10]]
     print(f"Topic {topic_id}: {', '.join(words)}")
 
-# ===================== Topic Table =====================
 print("\nGenerating topic table...")
 
 total_docs = len(df)
@@ -250,14 +242,12 @@ if manual_validation_rows:
     )
     print("Manual validation samples saved: dt_manual_validation_samples.csv")
 
-# ===================== 保存带主题编号的数据 =====================
 df.to_csv("dt_documents_with_topics.csv", index=False, encoding="utf-8-sig")
 print("Document-topic assignment saved: dt_documents_with_topics.csv")
 
-# ===================== 画图 =====================
 print("\nGenerating images...")
 
-# 1 主题数量图
+# 1 
 topic_counts = topic_model.get_topic_info().sort_values("Topic")
 
 plt.figure(figsize=(10, 5))
@@ -269,19 +259,19 @@ plt.tight_layout()
 plt.savefig("topic_count.png", dpi=300)
 plt.close()
 
-# 2 关键词条形图
+# 2 
 topic_model.visualize_barchart(
     top_n_topics=9,
     n_words=10,
     custom_labels=True
 ).write_image("topic_keywords.png")
 
-# 3 层级图
+# 3 
 topic_model.visualize_hierarchy(
     custom_labels=True
 ).write_image("topic_hierarchy.png")
 
-# 4 主题距离图
+# 4 
 fig = topic_model.visualize_topics(
     top_n_topics=9,
     width=1200,
@@ -309,7 +299,7 @@ for trace in fig.data:
 
 fig.write_image("intertopic_distance_map_labeled.png", scale=3)
 
-# 5 文档 UMAP 图
+# 5 
 fig_docs = topic_model.visualize_documents(
     df['cleaned_abstract'].tolist(),
     custom_labels=True,
@@ -318,14 +308,14 @@ fig_docs = topic_model.visualize_documents(
 )
 fig_docs.write_image("document_umap_by_topic.png", scale=3)
 
-# 6 主题相似度热力图
+# 6 
 fig_heatmap = topic_model.visualize_heatmap(
     n_clusters=3,
     custom_labels=True
 )
 fig_heatmap.write_image("topic_similarity_heatmap.png", scale=3)
 
-# 7 时间趋势 + 8 年份分布
+# 7 
 try:
     topics_over_time = topic_model.topics_over_time(
         docs=df['cleaned_abstract'].tolist(),
