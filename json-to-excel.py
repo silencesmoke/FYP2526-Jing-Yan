@@ -20,6 +20,6 @@ json_to_excel(
 )
 
 json_to_excel(
-    input_json="esrc_GPT-neoX-20B_result.json",
-    output_excel="esrc_GPT-neoX-20B_clean.xlsx"
+    input_json="gpt_neox_20b_esrc_results.json",
+    output_excel="gpt_neox_20b_esrc_results.json"
 )
