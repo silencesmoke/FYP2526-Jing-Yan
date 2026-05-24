@@ -8,7 +8,7 @@ JUDGE_MODEL = "Qwen/Qwen2-7B-Instruct"
 
 CSV_PATH = "scopus_data.csv"
 FLAN_RESULT_PATH = "esrc_flan_t5_result.json"
-NEOX_RESULT_PATH = "esrc_neox_result.json"
+NEOX_RESULT_PATH = "gpt_neox_20b_esrc_results.json"
 
 OUTPUT_PATH = "esrc_judge_results.json"
 TEST_NUM = 10
