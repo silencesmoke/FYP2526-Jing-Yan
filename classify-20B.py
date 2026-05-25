@@ -1,21 +1,31 @@
 import os
 import json
 import re
+import time
 import torch
 import pandas as pd
+from tqdm import tqdm
 from huggingface_hub import login
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
+
 MODEL_NAME = "EleutherAI/gpt-neox-20b"
+
 INPUT_FILE = "scopus_data.csv"
 OUTPUT_FILE = "gpt_neox_20b_esrc_results.json"
+
 TEMPERATURE = 0.1
 TOP_P = 0.9
 DO_SAMPLE = True
 MAX_INPUT_TOKENS = 1024
 MAX_NEW_TOKENS = 300
+MAX_TOKENS = MAX_NEW_TOKENS
+
 TORCH_DTYPE = torch.float16
 DEVICE_MAP = "auto"
+
+SAVE_EVERY = 20
+SLEEP_SECONDS = 0.0
 
 
 hf_token = os.getenv("HF_TOKEN")
@@ -164,23 +174,39 @@ def classify_article(article_id, abstract, index_keywords, author_keywords):
     return output_text
 
 
-def get_runtime_info():
+def make_output(results):
     return {
         "model_name": MODEL_NAME,
         "temperature": TEMPERATURE,
-        "top_p": TOP_P,
-        "do_sample": DO_SAMPLE,
-        "max_input_tokens": MAX_INPUT_TOKENS,
-        "max_new_tokens": MAX_NEW_TOKENS,
-        "torch_dtype": "float16",
-        "device_map": DEVICE_MAP,
-        "cuda_available": torch.cuda.is_available(),
-        "gpu_count": torch.cuda.device_count(),
-        "gpu_names": [
-            torch.cuda.get_device_name(i)
-            for i in range(torch.cuda.device_count())
-        ]
+        "results": results
     }
+
+
+def load_existing_results(output_file):
+    if not os.path.exists(output_file):
+        return []
+
+    try:
+        with open(output_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if isinstance(data, dict) and "results" in data:
+            return data["results"]
+
+        if isinstance(data, list):
+            return data
+
+        return []
+
+    except Exception:
+        return []
+
+
+def save_results(results):
+    output = make_output(results)
+
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2, ensure_ascii=False)
 
 
 def main():
@@ -190,14 +216,20 @@ def main():
         on_bad_lines="skip"
     )
 
+    results = load_existing_results(OUTPUT_FILE)
+    done_ids = set(str(item.get("article_id", "")) for item in results)
 
-    runtime_info = get_runtime_info()
-    print(json.dumps(runtime_info, indent=2, ensure_ascii=False))
+    print(f"Input rows: {len(df)}")
+    print(f"Already completed: {len(done_ids)}")
+    print(f"Model: {MODEL_NAME}")
+    print(f"Output file: {OUTPUT_FILE}")
 
-    results = []
-
-    for idx, row in df.iterrows():
+    for idx, row in tqdm(df.iterrows(), total=len(df)):
         article_id = safe_text(row["article_id"]) if "article_id" in df.columns else str(idx + 1)
+
+        if article_id in done_ids:
+            continue
+
         abstract = safe_text(row.get("Abstract", ""))
         index_keywords = safe_text(row.get("Index Keywords", ""))
         author_keywords = safe_text(row.get("Author Keywords", ""))
@@ -211,25 +243,27 @@ def main():
 
         try:
             parsed_output = extract_json(raw_output)
+            parsed_output["parse_warning"] = ""
+            parsed_output["raw_output"] = raw_output
         except Exception:
             parsed_output = {
                 "article_id": article_id,
                 "esrc_domain": "PARSE_ERROR",
-                "reason": raw_output
+                "reason": raw_output,
+                "parse_warning": "API_OR_PARSE_ERROR",
+                "raw_output": raw_output
             }
 
         print(parsed_output)
-
         results.append(parsed_output)
+        done_ids.add(article_id)
 
-    output = {
-        "runtime_info": runtime_info,
-        "results": results
-    }
+        if len(results) % SAVE_EVERY == 0:
+            save_results(results)
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(output, f, indent=2, ensure_ascii=False)
+        time.sleep(SLEEP_SECONDS)
 
+    save_results(results)
     print(f"Saved to {OUTPUT_FILE}")
 
 
