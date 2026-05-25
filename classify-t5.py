@@ -87,8 +87,8 @@ Briefly explain the reason for the classification by extracting the elements in 
 Output format:
 {{
   "article_id": "{article_id}",
-  "esrc_domain": "ESRC Discipline",
-  "reason": "Brief explanation of why this discipline was chosen, summarizing elements in the article that reflect this domain"
+  "abstract_snippet": "Brief explanation of why this discipline was chosen, summarizing elements in the article that reflect this domain",
+  "flan_t5_large_prediction": "ESRC Discipline"
 }}
 
 Return only valid JSON. Do not return any other text.
@@ -125,7 +125,7 @@ df = pd.read_csv("scopus_data.csv", encoding="gbk")
 
 results = []
 
-for _, row in df.head(3).iterrows():
+for _, row in df.iterrows():
     aid = row["article_id"]
     title = str(row["Title"])
     cleaned_abstract = str(row["cleaned_abstract"])
